@@ -7,12 +7,13 @@
 static uint16_t adc_min;
 static uint16_t adc_max;
 
-uint16_t get_liquid_level();
+uint16_t get_percent_fill();
+uint16_t get_adc_val();
+uint16_t get_space_left();
+uint16_t get_space_used();
 void init_stats();
-void set_adc_min(uint16_t val);
-uint16_t get_adc_min();
-void set_adc_max(uint16_t val);
-uint16_t get_adc_max();
+uint16_t get_tank_cap();
+void set_tank_cap(uint16_t cap);
 
 
 #endif

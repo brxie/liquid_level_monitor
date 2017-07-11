@@ -1,43 +1,50 @@
+#include "adc.h"
 #include "stats.h"
 
-static uint16_t adc_min = 335;
-static uint16_t adc_max = 394;
+static uint16_t tank_cap = 17;
+float adc_step = 0.315;
+uint16_t adc_start = 670;
 
 
-uint16_t get_liquid_level() {
-    uint16_t adc_res = 0;
+uint16_t get_percent_fill() {
+    float step = 100 / (float)tank_cap;
+    return (tank_cap - get_space_left()) * step;
+}
+
+uint16_t get_adc_val() {
+    uint16_t i = 0;
     uint32_t read_sum = 0;
-    uint16_t i;
-    float step = 100 / (float)(adc_max - adc_min);
-    /* get more stable results doing multiple measurement */
     for ( i = 0; i < 1000; i++ ) {
         read_sum += adc_read();
     }
-    adc_res = read_sum / 1000;
-    return (adc_res - adc_min) * step;
+    return read_sum / 1000;
 }
 
-/* debug purposes */
-uint16_t get_adc_val() {
-    return adc_read();
+uint16_t get_space_left() {
+    uint16_t res = ((adc_start - get_adc_val()) * adc_step);
+    /* aviod huge values which may cause crash caused by integer overflow */
+    res &= ~(0x0f << 12);
+    return res;
+}
+
+uint16_t get_space_used() {
+    uint16_t res = tank_cap - ((adc_start - get_adc_val()) * adc_step);
+    /* aviod huge values which may cause crash caused by integer overflow */
+    res &= ~(0x0f << 12);
+    return res;
 }
 
 void init_stats() {
     adc_init();
 }
 
-void set_adc_min(uint16_t val) {
-    adc_min = val;
+uint16_t get_tank_cap() {
+    return tank_cap;
 }
 
-uint16_t get_adc_min() {
-    return adc_min;
-}
-
-void set_adc_max(uint16_t val) {
-    adc_max = val;
-}
-
-uint16_t get_adc_max() {
-    return adc_max;
+void set_tank_cap(uint16_t cap) {
+    if (cap > 999) {
+        return;
+    }
+    tank_cap = cap;
 }

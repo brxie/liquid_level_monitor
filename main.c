@@ -1,15 +1,9 @@
 #include "stm8s.h"
-#include "stm8s_adc1.h"
 #include "stm8s_clk.h"
-#include "stm8s_exti.h"
 #include "stm8s_gpio.h"
 #include "stm8s_tim4.h"
 #include "stm8s_tim2.h"
 
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <utils.h>
 
 #include "pcd8544.h"
@@ -23,10 +17,9 @@
 
 typedef enum {MAIN_MENU, STATISTICS, SETTINGS} Menu;
 Menu menu = MAIN_MENU;
-uint16_t count = 0;
-uint16_t tim2_tempo = 0;
-uint16_t butn_cnt = 0;
-uint8_t butn_press_flag = 0;
+uint16_t debug_val = 0;
+uint8_t butns_cnt[7] = {0};
+uint8_t butns_press_flag = 0;
 
 /* Setup the system clock to run at 16MHz using the internal oscillator. */
 void CLK_Config()
@@ -50,11 +43,9 @@ void CLK_Config()
 
 static void GPIO_Config(void)
 {
-    BUTTONS_PORT->DDR &= ~BUTTON_MENU_PIN;
     /* Input with pull-up */
-    BUTTONS_PORT->CR1 |= BUTTON_MENU_PIN;
-    // /* External interrupt disabled */
-    // BUTTONS_PORT->CR2 |= BUTTON_MENU_PIN;
+    BUTTONS_PORT->DDR &= ~(BUTTON_MENU_PIN | BUTTON_OK_PIN);
+    BUTTONS_PORT->CR1 |= (BUTTON_MENU_PIN | BUTTON_OK_PIN);
 }
 
 static void TIM2_Config(void) 
@@ -68,7 +59,7 @@ static void TIM2_Config(void)
     TIM2->PSCR = TIM2_PSCR_RESET_VALUE;
     TIM2->SR1 = TIM2_SR1_RESET_VALUE;
 
-    TIM2->PSCR = (uint8_t)TIM2_PRESCALER_2;
+    TIM2->PSCR = (uint8_t)TIM2_PRESCALER_16;
     /* Set the Autoreload value */
     TIM2->ARRL = (0x00);
     TIM2->ARRH = (0xFF);
@@ -102,16 +93,6 @@ static void TIM4_Config(void)
   TIM4->CR1 |= TIM4_CR1_CEN;
 } 
 
-
-static void EXTI_Config(void)
-{
-    EXTI->CR1 &= (~EXTI_CR1_PAIS);
-    EXTI->CR1 |= (EXTI_SENSITIVITY_FALL_LOW);
-    EXTI->CR2 &= (~EXTI_CR2_TLIS);
-    EXTI->CR2 |= (EXTI_SENSITIVITY_FALL_LOW);
-}
-
-
 main()
 {
     disableInterrupts();
@@ -125,16 +106,8 @@ main()
     /* lcd init */
 	pcd8544_init();
 
-    /* lcd view */
-    draw_layout();
-    draw_level(35);
-    draw_percent(35);
-    draw_stats(0, 0);
-
     /* stats */
     init_stats();
-    set_adc_min(335);
-    set_adc_max(394);
 
     ITC->ISPR1 = 0x00;
     ITC->ISPR4 = 0;
@@ -144,58 +117,37 @@ main()
     
     while (1)
     {
-
+        debug_val = get_adc_val();
     }
 }
 
 /* LCD timer2 handler */
 uint8_t last_menu;
 INTERRUPT_HANDLER(TIM2_UPD_OVF_IRQHandler, 13) 
-{ 
-    uint16_t liquid_level;
-    
+{   
     switch(menu) {
     case MAIN_MENU:
         if (menu != last_menu) {
             pcd8544_cls_soft();
         }
-        if (tim2_tempo>1) 
-        { 
-            draw_layout();
-            liquid_level = get_liquid_level();
-            draw_stats(butn_cnt, butn_press_flag);
-            draw_percent(liquid_level);
-            draw_level(liquid_level);
-            tim2_tempo = 0;
-        }
+        render_main_menu(get_percent_fill(), get_tank_cap(), get_space_used(), get_space_left());
+        break;
     case STATISTICS:
         if (menu != last_menu) {
             pcd8544_cls_soft();
         }
-         if (tim2_tempo>10) {
-            pcd8544_rect(0,0,84,48,1);
-            set_curr_pos(1, 0);
-            pcd8544_print("Statistics:");
-            pcd8544_refresh();
-            tim2_tempo = 0;
-        }
+        render_stats();
+        break;
     
     case SETTINGS:
         if (menu != last_menu) {
             pcd8544_cls();
         }
-        if (tim2_tempo>10) {
-            pcd8544_rect(0,0,84,48,1);
-            set_curr_pos(1, 0);
-            pcd8544_print("Settings:");
-            pcd8544_refresh();
-            tim2_tempo = 0;
-        }
+        render_settings();
+        break;
     }
   
     last_menu = menu;
-
-    tim2_tempo++; 
     TIM2->SR1 = (~TIM2_IT_UPDATE);
 }
 
@@ -212,7 +164,6 @@ uint8_t buttonReleased(GPIO_TypeDef* gpio_port, uint8_t gpio_pin) {
 }
 
 uint8_t buttonPressed(GPIO_TypeDef* gpio_port, uint8_t gpio_pin) {
-    delay(200);
     return !buttonReleased(gpio_port, gpio_pin);
 }
 
@@ -223,23 +174,25 @@ uint8_t buttonPressed(GPIO_TypeDef* gpio_port, uint8_t gpio_pin) {
 */
 uint8_t getButtonState(GPIO_TypeDef* gpio_port, uint8_t gpio_pin) {
     if (buttonReleased(gpio_port, gpio_pin)) {
-        butn_press_flag = 0;  
+        butns_press_flag &= ~(1 << gpio_pin);
     } else {
-        butn_cnt++;
+        if (butns_cnt[gpio_pin] < 0xFF) {
+            butns_cnt[gpio_pin]++;
+        }
     }
-    if (!butn_press_flag) {
+    if (!(butns_press_flag >> gpio_pin) & 1) {
         /* continuous button */
-        if (butn_cnt>50) {
+        if (butns_cnt[gpio_pin]>50) {
             if (buttonReleased(gpio_port, gpio_pin)) {
-                butn_press_flag = 1;
-                butn_cnt = 0;
+                butns_press_flag |= 1 << gpio_pin;
+                butns_cnt[gpio_pin] = 0;
                 return 2;
             }
         }
         /* normal button */
-        if (butn_cnt>3) {
+        if (butns_cnt[gpio_pin]>2) {
             if (buttonReleased(gpio_port, gpio_pin)) {
-                butn_cnt = 0;
+                butns_cnt[gpio_pin] = 0;
                 return 1;
             }
         }
@@ -272,14 +225,12 @@ INTERRUPT_HANDLER(TIM4_UPD_OVF_IRQHandler, 23)
         break;
 
     case SETTINGS:
+        
         if (getButtonState(BUTTONS_PORT, BUTTON_MENU_PIN)) {
             menu = MAIN_MENU;
         }
-        break;
-    default:
-        led_blink(10);
-        if (getButtonState(BUTTONS_PORT, BUTTON_MENU_PIN)) {
-            menu = MAIN_MENU;
+        if (getButtonState(BUTTONS_PORT, BUTTON_OK_PIN)) {
+            set_tank_cap(get_tank_cap() + 1);
         }
         break;
     }

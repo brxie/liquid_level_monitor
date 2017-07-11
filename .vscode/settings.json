@@ -4,6 +4,17 @@
         "stm8s_exti.h": "c",
         "stm8s_gpio.h": "c",
         "stm8s_clk.h": "c",
-        "stm8s_tim2.h": "c"
+        "stm8s_tim2.h": "c",
+        "stm8s_adc1.h": "c",
+        "stats.h": "c",
+        "adc.h": "c",
+        "getopt.h": "c",
+        "view.c": "cpp",
+        "pcd8544.c": "cpp",
+        "stm8s_tim4.h": "c",
+        "stats.c": "cpp",
+        "utils.h": "c",
+        "stdlib.h": "c",
+        "pcd8544.h": "c"
     }
 }
