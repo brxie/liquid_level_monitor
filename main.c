@@ -17,9 +17,9 @@
 
 typedef enum {MAIN_MENU, STATISTICS, SETTINGS} Menu;
 Menu menu = MAIN_MENU;
-uint16_t debug_val = 0;
 uint8_t butns_cnt[7] = {0};
 uint8_t butns_press_flag = 0;
+extern uint8_t sett_cusr_pos;
 
 /* Setup the system clock to run at 16MHz using the internal oscillator. */
 void CLK_Config()
@@ -66,7 +66,7 @@ static void TIM2_Config(void)
 
     //TIM2_ITConfig(TIM2_IT_UPDATE, ENABLE); 
     TIM2->IER |= ENABLE;
-    //TIM2_Cmd(ENABLE);    // Enable TIM2  
+    //TIM2_Cmd(ENABLE);
     TIM2->CR1 |= TIM2_CR1_CEN;
 } 
 
@@ -117,7 +117,6 @@ main()
     
     while (1)
     {
-        debug_val = get_adc_val();
     }
 }
 
@@ -130,7 +129,7 @@ INTERRUPT_HANDLER(TIM2_UPD_OVF_IRQHandler, 13)
         if (menu != last_menu) {
             pcd8544_cls_soft();
         }
-        render_main_menu(get_percent_fill(), get_tank_cap(), get_space_used(), get_space_left());
+        render_main_menu(get_percent_fill(), get_space_used(), get_space_left());
         break;
     case STATISTICS:
         if (menu != last_menu) {
@@ -225,13 +224,22 @@ INTERRUPT_HANDLER(TIM4_UPD_OVF_IRQHandler, 23)
         break;
 
     case SETTINGS:
-        
-        if (getButtonState(BUTTONS_PORT, BUTTON_MENU_PIN)) {
+        buttonState = getButtonState(BUTTONS_PORT, BUTTON_MENU_PIN);
+        if (buttonState == 2) {
+            sett_cusr_pos++;
+        }
+        if (buttonState == 1) {
             menu = MAIN_MENU;
         }
-        if (getButtonState(BUTTONS_PORT, BUTTON_OK_PIN)) {
-            set_tank_cap(get_tank_cap() + 1);
+
+        buttonState = getButtonState(BUTTONS_PORT, BUTTON_OK_PIN);
+        if (buttonState == 2) {
+            toggle_sett_step_mode();
         }
+        if (buttonState == 1) {
+            step_activ_sett_val();
+        }
+        
         break;
     }
 

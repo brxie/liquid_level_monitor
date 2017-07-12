@@ -2,12 +2,9 @@
 #include "stats.h"
 
 char buff[10];
+uint8_t sett_cusr_pos = 0;
+const uint8_t SETT_POS_COUNT = 3;
 
-void draw_layout() {
-    pcd8544_fill_rect(26, 20, 58, 1, 1);
-    pcd8544_fill_rect(26, 20, 1, 30, 1);
-    pcd8544_refresh();
-}
 
 void draw_level(float prct) {
     uint8_t width = 25; uint8_t height = 48;
@@ -22,11 +19,9 @@ void draw_level(float prct) {
         }
     }
     pcd8544_fill_rect(1, 0, width-2, step*(100-prct), 0);
-    pcd8544_refresh();
 }
 
 void draw_percent(uint8_t prct) {
-    
     uint8_t x = 28; uint8_t y = 0;
     uint8_t offset = 0;
     pcd8544_fill_rect(28, 0, XSIZE-x, 18, 0);
@@ -38,53 +33,63 @@ void draw_percent(uint8_t prct) {
     if (prct>99) {offset+=3;}
     set_curr_pos(offset, y+1);
     pcd8544_print("%");
-    pcd8544_refresh();
 }
 
-void draw_stats(uint16_t cap, uint16_t used, uint16_t free) {
-    uint8_t x = 5; uint8_t y = 3;
+void draw_stats(uint16_t used, uint16_t free) {
+    uint8_t x = 5; uint8_t y = 4;
 
     /* clear statistics area on each refresh */
     pcd8544_fill_rect((x-1)*8, y*8, 55, 25, 0);
 
     set_curr_pos(x, y);
     pcd8544_print("USE:  ");
-    _itoa(get_space_used(), buff, 10);
+    _itoa(used, buff, 10);
     pcd8544_print(buff);
 
     set_curr_pos(x, y+1);
     pcd8544_print("FREE: ");
-    _itoa(get_space_left(), buff, 10);
+    _itoa(free, buff, 10);
     pcd8544_print(buff);
 }
 
-void render_main_menu(uint8_t percent_fill, uint16_t tank_cap, uint16_t last, uint16_t max) {
-    draw_layout();
-    draw_stats(tank_cap, last, max);
+void render_main_menu(uint8_t percent_fill, uint16_t last, uint16_t max) {
+    draw_stats(last, max);
     draw_percent(percent_fill);
     draw_level(percent_fill);
+    pcd8544_refresh();
+}
+
+void draw_sett_cusr() {
+    uint8_t offset = 2;
+    if (sett_cusr_pos >= SETT_POS_COUNT) {
+        sett_cusr_pos = 0;
+    }
+    set_curr_pos(0, offset + sett_cusr_pos);
+    pcd8544_print(">");
 }
 
 void render_settings() {
+    uint8_t val_disp_off = 2;
     pcd8544_cls_soft();
     set_curr_pos(3, 0);
     pcd8544_print("CALIB:");
 
     _itoa(get_tank_cap(), buff, 10);
-    set_curr_pos(0, 2);
-    pcd8544_print(" C:");
+    set_curr_pos(0, val_disp_off + 0);
+    pcd8544_print(" CAP: ");
     pcd8544_print(buff);
     
-    _itoa(315, buff, 10);
-    set_curr_pos(0, 3);
-    pcd8544_print(" M:");
+    _itoa(get_adc_multipl(), buff, 10);
+    set_curr_pos(0, val_disp_off + 1);
+    pcd8544_print(" MULTIPL: ");
     pcd8544_print(buff);
     
-    _itoa(400, buff, 10);
-    set_curr_pos(0, 4);
-    pcd8544_print(" AS:");
+    _itoa(get_adc_offset(), buff, 10);
+    set_curr_pos(0, val_disp_off + 2);
+    pcd8544_print(" ADC OFFS: ");
     pcd8544_print(buff);
 
+    draw_sett_cusr();
     pcd8544_refresh();
 }
 
@@ -92,25 +97,26 @@ void render_stats() {
     pcd8544_cls_soft();
     set_curr_pos(0, 0);
     pcd8544_print("STATS:");
-    pcd8544_refresh();
 
     set_curr_pos(0, 2);
-    pcd8544_print("C: ");
+    pcd8544_print("CAP: ");
     _itoa(get_tank_cap(), buff, 10);
     pcd8544_print(buff);
 
     set_curr_pos(0, 3);
-    pcd8544_print("U: ");
+    pcd8544_print("USE: ");
     _itoa(get_space_used(), buff, 10);
     pcd8544_print(buff);
 
     set_curr_pos(0, 4);
-    pcd8544_print("F: ");
+    pcd8544_print("FREE: ");
     _itoa(get_space_left(), buff, 10);
     pcd8544_print(buff);
 
     set_curr_pos(0, 5);
-    pcd8544_print("A: ");
+    pcd8544_print("ADC VAL: ");
     _itoa(get_adc_val(), buff, 10);
     pcd8544_print(buff);
+
+    pcd8544_refresh();
 }

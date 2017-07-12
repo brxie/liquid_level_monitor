@@ -15,6 +15,7 @@
         "stats.c": "cpp",
         "utils.h": "c",
         "stdlib.h": "c",
-        "pcd8544.h": "c"
+        "pcd8544.h": "c",
+        "adc.c": "cpp"
     }
 }

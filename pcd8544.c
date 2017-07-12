@@ -256,28 +256,28 @@ void pcd8544_fill_rect(uint8_t x, uint8_t y, uint8_t w, uint8_t h, uint8_t set)
 	}
 }
 
-uint8_t pcd8544_bitmap(uint8_t *bitmap, uint8_t x, uint8_t y, uint8_t w, uint8_t h)
-{
-	const uint8_t size = w * h;
-	uint8_t xpos = 0;
-	uint16_t i;
-	uint8_t tmp_buff[XSIZE];
-	bufsz_t idx;
-	for (i=0; i < (w*h); i += w) {
-		memcpy(&tmp_buff, &bitmap[i], w);
-		if (!(i % w) && (i != 0)) {
-			xpos = x;
-			y++;
-		}
-		idx = xpos + (y*XSIZE);
-		memcpy(&displaybuf[idx], &bitmap[i], w);
-		SETYADDR(y);
-		SETXADDR(xpos);
-		DBUF(tmp_buff, w);
-		xpos++;
-	}
-	return 1;
-}
+// uint8_t pcd8544_bitmap(uint8_t *bitmap, uint8_t x, uint8_t y, uint8_t w, uint8_t h)
+// {
+// 	const uint8_t size = w * h;
+// 	uint8_t xpos = 0;
+// 	uint16_t i;
+// 	uint8_t tmp_buff[XSIZE];
+// 	bufsz_t idx;
+// 	for (i=0; i < (w*h); i += w) {
+// 		memcpy(&tmp_buff, &bitmap[i], w);
+// 		if (!(i % w) && (i != 0)) {
+// 			xpos = x;
+// 			y++;
+// 		}
+// 		idx = xpos + (y*XSIZE);
+// 		memcpy(&displaybuf[idx], &bitmap[i], w);
+// 		SETYADDR(y);
+// 		SETXADDR(xpos);
+// 		DBUF(tmp_buff, w);
+// 		xpos++;
+// 	}
+// 	return 1;
+// }
 
 /**
  * put char into current position or next line; return char if couldn't be printed
@@ -341,13 +341,13 @@ uint8_t *pcd8544_print(uint8_t *koi8){
 /**
  * roll screen by 1 line up
  */
-void pcd8544_roll_screen(){
-	bufsz_t idx = DISPLAYBUFSIZE-XSIZE;
-	memmove(displaybuf, displaybuf + XSIZE, idx);
-	memset(displaybuf+idx, 0, XSIZE);
-	pcd8544_refresh();
-	if(cur_y) --cur_y;
-}
+// void pcd8544_roll_screen(){
+// 	bufsz_t idx = DISPLAYBUFSIZE-XSIZE;
+// 	memmove(displaybuf, displaybuf + XSIZE, idx);
+// 	memset(displaybuf+idx, 0, XSIZE);
+// 	pcd8544_refresh();
+// 	if(cur_y) --cur_y;
+// }
 
 void set_curr_pos(uint8_t x, uint8_t y) {
 	cur_x = x;
