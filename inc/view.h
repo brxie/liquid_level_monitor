@@ -11,4 +11,5 @@ void render_main_menu(uint8_t percent_fill, uint16_t last, uint16_t max);
 void draw_sett_cusr();
 void render_settings();
 void render_stats();
+void print_info(char *text);
 #endif

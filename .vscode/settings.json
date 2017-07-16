@@ -16,6 +16,10 @@
         "utils.h": "c",
         "stdlib.h": "c",
         "pcd8544.h": "c",
-        "adc.c": "cpp"
+        "adc.c": "cpp",
+        "view.h": "c",
+        "stm8s_flash.h": "c",
+        "eeprom.c": "cpp",
+        "eeprom.h": "c"
     }
 }

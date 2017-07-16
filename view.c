@@ -11,7 +11,7 @@ void draw_level(float prct) {
     uint8_t x; uint8_t y;
     uint8_t set = 1;
     float step = (height - 1)/(float)100;
-    pcd8544_rect(0, 0, width, height, 1);
+    pcd8544_fill_rect(0, 0, width, height, 1);
     for(x=1; x<width-1; x++){
         for(y=0; y<height-1; y++){
             set = !set;
@@ -42,12 +42,12 @@ void draw_stats(uint16_t used, uint16_t free) {
     pcd8544_fill_rect((x-1)*8, y*8, 55, 25, 0);
 
     set_curr_pos(x, y);
-    pcd8544_print("USE:  ");
+    pcd8544_print("USE ");
     _itoa(used, buff, 10);
     pcd8544_print(buff);
 
     set_curr_pos(x, y+1);
-    pcd8544_print("FREE: ");
+    pcd8544_print("FREE ");
     _itoa(free, buff, 10);
     pcd8544_print(buff);
 }
@@ -75,18 +75,18 @@ void render_settings() {
     pcd8544_print("CALIB:");
 
     _itoa(get_tank_cap(), buff, 10);
-    set_curr_pos(0, val_disp_off + 0);
-    pcd8544_print(" CAP: ");
+    set_curr_pos(1, val_disp_off + 0);
+    pcd8544_print("CAP ");
     pcd8544_print(buff);
     
     _itoa(get_adc_multipl(), buff, 10);
-    set_curr_pos(0, val_disp_off + 1);
-    pcd8544_print(" MULTIPL: ");
+    set_curr_pos(1, val_disp_off + 1);
+    pcd8544_print("MULTIPL ");
     pcd8544_print(buff);
     
     _itoa(get_adc_offset(), buff, 10);
-    set_curr_pos(0, val_disp_off + 2);
-    pcd8544_print(" ADC OFFS: ");
+    set_curr_pos(1, val_disp_off + 2);
+    pcd8544_print("ADC OFFS ");
     pcd8544_print(buff);
 
     draw_sett_cusr();
@@ -99,24 +99,29 @@ void render_stats() {
     pcd8544_print("STATS:");
 
     set_curr_pos(0, 2);
-    pcd8544_print("CAP: ");
+    pcd8544_print("CAP ");
     _itoa(get_tank_cap(), buff, 10);
     pcd8544_print(buff);
 
     set_curr_pos(0, 3);
-    pcd8544_print("USE: ");
+    pcd8544_print("USE ");
     _itoa(get_space_used(), buff, 10);
     pcd8544_print(buff);
 
     set_curr_pos(0, 4);
-    pcd8544_print("FREE: ");
+    pcd8544_print("FREE ");
     _itoa(get_space_left(), buff, 10);
     pcd8544_print(buff);
 
     set_curr_pos(0, 5);
-    pcd8544_print("ADC VAL: ");
+    pcd8544_print("ADC VAL ");
     _itoa(get_adc_val(), buff, 10);
     pcd8544_print(buff);
 
     pcd8544_refresh();
+}
+
+void print_info(char *text) {
+    set_curr_pos(5, 3);
+    pcd8544_print(text);
 }

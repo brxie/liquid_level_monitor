@@ -1,9 +1,8 @@
-#include "adc.h"
 #include "stats.h"
 
-static uint16_t tank_cap = 150;
-float adc_multipl = 0.315;
-uint16_t adc_offset = 670;
+uint16_t tank_cap;
+uint16_t adc_multipl;
+uint16_t adc_offset;
 extern uint8_t sett_cusr_pos;
 uint8_t sett_step_mode = 0;
 enum SETT_VAL {CAP, MULTIPL, ADC_OFF};
@@ -11,7 +10,12 @@ enum SETT_VAL_STEP_MODE {ADD, SUBTRACT};
 
 uint16_t get_percent_fill() {
     float step = 100 / (float)tank_cap;
-    return (tank_cap - get_space_left()) * step;
+    uint8_t res;
+    res = (tank_cap - get_space_left()) * step;
+    if (res > 100) {
+        return 100;
+    }
+    return res;
 }
 
 uint16_t get_adc_val() {
@@ -24,16 +28,19 @@ uint16_t get_adc_val() {
 }
 
 uint16_t get_space_left() {
-    uint16_t res = ((adc_offset - get_adc_val()) * adc_multipl);
-    /* aviod huge values which may cause crash caused by integer overflow */
-    res &= ~(0x0f << 12);
+    uint16_t res = tank_cap - get_space_used();
+    if (res > 999) {
+        res = 999;
+    }
     return res;
+    
 }
 
 uint16_t get_space_used() {
-    uint16_t res = tank_cap - ((adc_offset - get_adc_val()) * adc_multipl);
-    /* aviod huge values which may cause crash caused by integer overflow */
-    res &= ~(0x0f << 12);
+uint16_t res = ((adc_offset - get_adc_val()) * ((float)adc_multipl / 1000));
+    if (res > 999) {
+        res = 999;
+    }
     return res;
 }
 
@@ -53,14 +60,14 @@ void set_tank_cap(uint16_t cap) {
 }
 
 uint16_t get_adc_multipl() {
-    return adc_multipl * 1000;
+    return adc_multipl;
 }
 
 void set_adc_multipl(uint16_t multipl) {
-    if (multipl / 1000 > 9999) {
+    if (multipl > 9999) {
         return;
     }
-    adc_multipl = (float)multipl / 1000;
+    adc_multipl = multipl;
 }
 
 uint16_t get_adc_offset() {
@@ -99,12 +106,13 @@ void set_activ_sett_val(uint16_t val) {
 uint16_t get_activ_sett_val() {
     switch (sett_cusr_pos) {
     case CAP:
-        return get_tank_cap();
+        return tank_cap;
     case MULTIPL:
-        return get_adc_multipl();
+        return adc_multipl;
     case ADC_OFF:
-        return get_adc_offset();
+        return adc_offset;
     }
+
 }
 
 void step_activ_sett_val() {
@@ -116,4 +124,47 @@ void step_activ_sett_val() {
         set_activ_sett_val(get_activ_sett_val() - 1);
         break;
     }
+}
+
+void persist_settings_in_eeprom() {
+    uint8_t eeprom_buff[2];
+
+    eeprom_buff[0]=tank_cap & 0xff;
+    eeprom_buff[1]=(tank_cap >> 8);
+    eeprom_write_page(TANK_CAPACITY_EEPROM_ADDRESS, eeprom_buff, 2);
+
+    eeprom_buff[0]=adc_multipl & 0xff;
+    eeprom_buff[1]=(adc_multipl >> 8);
+    eeprom_write_page(ADC_MULTIPLER_EEPROM_ADDRESS, eeprom_buff, 2);
+
+    eeprom_buff[0]=adc_offset & 0xff;
+    eeprom_buff[1]=(adc_offset >> 8);
+    eeprom_write_page(ADC_OFFSET_EEPROM_ADDRESS, eeprom_buff, 2);
+}
+
+void read_settings_from_eeprom() {
+    uint8_t eeprom_buff[2];
+    uint16_t res;
+
+    eeprom_read_page(TANK_CAPACITY_EEPROM_ADDRESS, eeprom_buff, 2);
+    res = eeprom_buff[1] << 8;
+    res = res | eeprom_buff[0];
+    set_tank_cap(res);
+
+    eeprom_read_page(ADC_MULTIPLER_EEPROM_ADDRESS, eeprom_buff, 2);
+    res = eeprom_buff[1] << 8;
+    res = res | eeprom_buff[0];
+    set_adc_multipl(res);
+
+    eeprom_read_page(ADC_OFFSET_EEPROM_ADDRESS, eeprom_buff, 2);
+    res = eeprom_buff[1] << 8;
+    res = res | eeprom_buff[0];
+    set_adc_offset(res);
+}
+
+void restore_default_settings() {
+    tank_cap = DEFAULT_TANK_CAPACITY;
+    adc_multipl = DEFAULT_ADC_MULTIPLER;
+    adc_offset = DEFAULT_ADC_OFFSET;
+    persist_settings_in_eeprom();
 }

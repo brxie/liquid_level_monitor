@@ -232,18 +232,18 @@ int pcd8544_put_big(uint8_t koi8, scrnsz_t x, scrnsz_t y){
 	return 1;
 }
 
-void pcd8544_rect(uint8_t x, uint8_t y, uint8_t w, uint8_t h, uint8_t set)
-{
-	int16_t i;
-	for (i=x; i<x+w; i++) {
-		draw_pixel(i, y, set);
-		draw_pixel(i, y+h-1, set);
-	}
-	for (i=y; i<y+h; i++) {
-		draw_pixel(x, i, set);
-		draw_pixel(x+w-1, i, set);
-	}
-}
+// void pcd8544_rect(uint8_t x, uint8_t y, uint8_t w, uint8_t h, uint8_t set)
+// {
+// 	int16_t i;
+// 	for (i=x; i<x+w; i++) {
+// 		draw_pixel(i, y, set);
+// 		draw_pixel(i, y+h-1, set);
+// 	}
+// 	for (i=y; i<y+h; i++) {
+// 		draw_pixel(x, i, set);
+// 		draw_pixel(x+w-1, i, set);
+// 	}
+// }
 
 void pcd8544_fill_rect(uint8_t x, uint8_t y, uint8_t w, uint8_t h, uint8_t set)
 {

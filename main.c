@@ -6,6 +6,7 @@
 
 #include <utils.h>
 
+#include "eeprom.h"
 #include "pcd8544.h"
 #include "view.h"
 #include "stats.h"
@@ -20,6 +21,7 @@ Menu menu = MAIN_MENU;
 uint8_t butns_cnt[7] = {0};
 uint8_t butns_press_flag = 0;
 extern uint8_t sett_cusr_pos;
+uint8_t last_menu;
 
 /* Setup the system clock to run at 16MHz using the internal oscillator. */
 void CLK_Config()
@@ -53,11 +55,10 @@ static void TIM2_Config(void)
     //CLK_PeripheralClockConfig(CLK_PERIPHERAL_TIMER2, ENABLE); 
     CLK->PCKENR1 |= (1 << (CLK_PERIPHERAL_TIMER2 & 0x0F));
 
-    //TIM4_DeInit(); 
-    TIM2->CR1 = TIM2_CR1_RESET_VALUE;
-    TIM2->IER = TIM2_IER_RESET_VALUE;
-    TIM2->PSCR = TIM2_PSCR_RESET_VALUE;
-    TIM2->SR1 = TIM2_SR1_RESET_VALUE;
+    // TIM2->CR1 = TIM2_CR1_RESET_VALUE;
+    // TIM2->IER = TIM2_IER_RESET_VALUE;
+    // TIM2->PSCR = TIM2_PSCR_RESET_VALUE;
+    // TIM2->SR1 = TIM2_SR1_RESET_VALUE;
 
     TIM2->PSCR = (uint8_t)TIM2_PRESCALER_16;
     /* Set the Autoreload value */
@@ -72,84 +73,25 @@ static void TIM2_Config(void)
 
 static void TIM4_Config(void) 
 { 
-  //CLK_PeripheralClockConfig(CLK_PERIPHERAL_TIMER4, ENABLE); 
-  CLK->PCKENR1 |= (1 << (CLK_PERIPHERAL_TIMER4 & 0x0F));
-  
-  //TIM4_DeInit(); 
-  TIM4->CR1 = TIM4_CR1_RESET_VALUE;
-  TIM4->IER = TIM4_IER_RESET_VALUE;
-  TIM4->CNTR = TIM4_CNTR_RESET_VALUE;
-  TIM4->PSCR = TIM4_PSCR_RESET_VALUE;
-  TIM4->ARR = TIM4_ARR_RESET_VALUE;
-  TIM4->SR1 = TIM4_SR1_RESET_VALUE;
+    //CLK_PeripheralClockConfig(CLK_PERIPHERAL_TIMER4, ENABLE); 
+    CLK->PCKENR1 |= (1 << (CLK_PERIPHERAL_TIMER4 & 0x0F));
 
-  TIM4->PSCR = (TIM4_PRESCALER_128);
-  /* Set the Autoreload value */
-  TIM4->ARR = (0xFF);
+    // TIM4->CR1 = TIM4_CR1_RESET_VALUE;
+    // TIM4->IER = TIM4_IER_RESET_VALUE;
+    // TIM4->CNTR = TIM4_CNTR_RESET_VALUE;
+    // TIM4->PSCR = TIM4_PSCR_RESET_VALUE;
+    // TIM4->ARR = TIM4_ARR_RESET_VALUE;
+    // TIM4->SR1 = TIM4_SR1_RESET_VALUE;
 
-  //TIM4_ITConfig(TIM4_IT_UPDATE, ENABLE); 
-  TIM4->IER |= TIM4_IT_UPDATE;
-  //TIM4_Cmd(ENABLE);    // Enable TIM4  
-  TIM4->CR1 |= TIM4_CR1_CEN;
-} 
+    TIM4->PSCR = (TIM4_PRESCALER_128);
+    /* Set the Autoreload value */
+    TIM4->ARR = (0xFF);
 
-main()
-{
-    disableInterrupts();
-    CLK_Config();
-	
-
-    GPIO_Config();
-    TIM4_Config();
-    TIM2_Config();
-
-    /* lcd init */
-	pcd8544_init();
-
-    /* stats */
-    init_stats();
-
-    ITC->ISPR1 = 0x00;
-    ITC->ISPR4 = 0;
-    ITC->ISPR4 |= (0x03<<2);
-
-    enableInterrupts();
-    
-    while (1)
-    {
-    }
+    //TIM4_ITConfig(TIM4_IT_UPDATE, ENABLE); 
+    TIM4->IER |= TIM4_IT_UPDATE;
+    //TIM4_Cmd(ENABLE);    // Enable TIM4  
+    TIM4->CR1 |= TIM4_CR1_CEN;
 }
-
-/* LCD timer2 handler */
-uint8_t last_menu;
-INTERRUPT_HANDLER(TIM2_UPD_OVF_IRQHandler, 13) 
-{   
-    switch(menu) {
-    case MAIN_MENU:
-        if (menu != last_menu) {
-            pcd8544_cls_soft();
-        }
-        render_main_menu(get_percent_fill(), get_space_used(), get_space_left());
-        break;
-    case STATISTICS:
-        if (menu != last_menu) {
-            pcd8544_cls_soft();
-        }
-        render_stats();
-        break;
-    
-    case SETTINGS:
-        if (menu != last_menu) {
-            pcd8544_cls();
-        }
-        render_settings();
-        break;
-    }
-  
-    last_menu = menu;
-    TIM2->SR1 = (~TIM2_IT_UPDATE);
-}
-
 
 uint8_t buttonReleased(GPIO_TypeDef* gpio_port, uint8_t gpio_pin) {
     
@@ -199,7 +141,63 @@ uint8_t getButtonState(GPIO_TypeDef* gpio_port, uint8_t gpio_pin) {
     return 0;
 }
 
-/* buttons handling timer */
+main()
+{
+    disableInterrupts();
+    CLK_Config();
+	
+    GPIO_Config();
+    TIM4_Config();
+    TIM2_Config();
+
+    /* lcd init */
+	pcd8544_init();
+
+    /* stats */
+    init_stats();
+
+    read_settings_from_eeprom();
+    if(buttonPressed(BUTTONS_PORT, BUTTON_OK_PIN)) {
+        restore_default_settings();
+        print_info("REST SETT");
+    }
+
+    enableInterrupts();
+    while (1)
+    {
+    }
+}
+
+/* LCD timer2 handler */
+INTERRUPT_HANDLER(TIM2_UPD_OVF_IRQHandler, 13) 
+{   
+    switch(menu) {
+    case MAIN_MENU:
+        if (menu != last_menu) {
+            pcd8544_cls_soft();
+        }
+        render_main_menu(get_percent_fill(), get_space_used(), get_space_left());
+        break;
+    case STATISTICS:
+        if (menu != last_menu) {
+            pcd8544_cls_soft();
+        }
+        render_stats();
+        break;
+    
+    case SETTINGS:
+        if (menu != last_menu) {
+            pcd8544_cls();
+        }
+        render_settings();
+        break;
+    }
+  
+    last_menu = menu;
+    TIM2->SR1 = (~TIM2_IT_UPDATE);
+}
+
+/* buttons timer4 handling timer */
 INTERRUPT_HANDLER(TIM4_UPD_OVF_IRQHandler, 23) 
 { 
     int8_t buttonState = 0;
@@ -230,6 +228,7 @@ INTERRUPT_HANDLER(TIM4_UPD_OVF_IRQHandler, 23)
         }
         if (buttonState == 1) {
             menu = MAIN_MENU;
+            persist_settings_in_eeprom();
         }
 
         buttonState = getButtonState(BUTTONS_PORT, BUTTON_OK_PIN);
