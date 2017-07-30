@@ -1,4 +1,5 @@
 #include "stm8s.h"
+#include "stm8s_beep.h"
 #include "stm8s_clk.h"
 #include "stm8s_gpio.h"
 #include "stm8s_tim4.h"
@@ -60,7 +61,7 @@ static void TIM2_Config(void)
     // TIM2->PSCR = TIM2_PSCR_RESET_VALUE;
     // TIM2->SR1 = TIM2_SR1_RESET_VALUE;
 
-    TIM2->PSCR = (uint8_t)TIM2_PRESCALER_16;
+    TIM2->PSCR = (uint8_t)TIM2_PRESCALER_32;
     /* Set the Autoreload value */
     TIM2->ARRL = (0x00);
     TIM2->ARRH = (0xFF);
@@ -91,6 +92,26 @@ static void TIM4_Config(void)
     TIM4->IER |= TIM4_IT_UPDATE;
     //TIM4_Cmd(ENABLE);    // Enable TIM4  
     TIM4->CR1 |= TIM4_CR1_CEN;
+}
+
+void beep_init() {
+  /* Set a default calibration value if no calibration is done */
+  if ((BEEP->CSR & BEEP_CSR_BEEPDIV) == BEEP_CSR_BEEPDIV)
+  {
+    BEEP->CSR &= (uint8_t)(~BEEP_CSR_BEEPDIV); /* Clear bits */
+    BEEP->CSR |= BEEP_CALIBRATION_DEFAULT;
+  }
+  
+  /* Select the output frequency */
+  BEEP->CSR &= (uint8_t)(~BEEP_CSR_BEEPSEL);
+  BEEP->CSR |= (uint8_t)(BEEP_FREQUENCY_2KHZ);
+
+}
+
+void beep(uint16_t duration) {
+    BEEP->CSR |= BEEP_CSR_BEEPEN;
+    delay(duration);
+    BEEP->CSR &= ~BEEP_CSR_BEEPEN;
 }
 
 uint8_t buttonReleased(GPIO_TypeDef* gpio_port, uint8_t gpio_pin) {
@@ -127,6 +148,7 @@ uint8_t getButtonState(GPIO_TypeDef* gpio_port, uint8_t gpio_pin) {
             if (buttonReleased(gpio_port, gpio_pin)) {
                 butns_press_flag |= 1 << gpio_pin;
                 butns_cnt[gpio_pin] = 0;
+                beep(800);
                 return 2;
             }
         }
@@ -134,6 +156,7 @@ uint8_t getButtonState(GPIO_TypeDef* gpio_port, uint8_t gpio_pin) {
         if (butns_cnt[gpio_pin]>2) {
             if (buttonReleased(gpio_port, gpio_pin)) {
                 butns_cnt[gpio_pin] = 0;
+                beep(400);
                 return 1;
             }
         }
@@ -153,6 +176,8 @@ main()
     /* lcd init */
 	pcd8544_init();
 
+    beep_init();
+    
     /* stats */
     init_stats();
 
@@ -163,6 +188,8 @@ main()
     }
 
     enableInterrupts();
+    
+    
     while (1)
     {
     }

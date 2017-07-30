@@ -33,7 +33,7 @@
 // LCD5110 pins: ~RST is PD2, ~CE is PD1, D/~C is PD0
 #define LCD_PORT		GPIOD
 #define LCD_RST_PIN		GPIO_PIN_1
-#define LCD_CE_PIN		GPIO_PIN_4
+#define LCD_CE_PIN		GPIO_PIN_6
 #define LCD_DC_PIN		GPIO_PIN_2
 /* here are functions & macros for changing command pins state:
  *   SET_DC()    - set D/~C pin high (data)
