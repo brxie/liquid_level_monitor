@@ -20,6 +20,7 @@
         "view.h": "c",
         "stm8s_flash.h": "c",
         "eeprom.c": "cpp",
-        "eeprom.h": "c"
+        "eeprom.h": "c",
+        "stm8s_beep.h": "c"
     }
 }

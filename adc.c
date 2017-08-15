@@ -1,4 +1,5 @@
 #include "adc.h"
+#include "stm8s_gpio.h"
 
 void adc_init() {
     /* Clear the SPSEL bits */
@@ -14,7 +15,7 @@ void adc_init() {
     /* The reading order should be LSB first and then MSB */
     ADC1->CR2 |= ADC1_ALIGN_RIGHT;
     /* wakes up the ADC from power down mode */
-    ADC1->CR1 |= ADC1_CR1_ADON; 
+    ADC1->CR1 |= ADC1_CR1_ADON;
 }
 
 uint16_t adc_read() {

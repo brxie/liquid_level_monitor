@@ -144,7 +144,7 @@ uint8_t getButtonState(GPIO_TypeDef* gpio_port, uint8_t gpio_pin) {
     }
     if (!(butns_press_flag >> gpio_pin) & 1) {
         /* continuous button */
-        if (butns_cnt[gpio_pin]>50) {
+        if (butns_cnt[gpio_pin]>200) {
             if (buttonReleased(gpio_port, gpio_pin)) {
                 butns_press_flag |= 1 << gpio_pin;
                 butns_cnt[gpio_pin] = 0;
@@ -188,7 +188,6 @@ main()
     }
 
     enableInterrupts();
-    
     
     while (1)
     {

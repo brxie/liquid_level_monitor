@@ -28,18 +28,23 @@ uint16_t get_adc_val() {
 }
 
 uint16_t get_space_left() {
-    uint16_t res = tank_cap - get_space_used();
-    if (res > 999) {
-        res = 999;
+    int16_t res = tank_cap - get_space_used();
+    if (res > tank_cap) {
+        res = tank_cap;
     }
     return res;
     
 }
 
 uint16_t get_space_used() {
-uint16_t res = ((adc_offset - get_adc_val()) * ((float)adc_multipl / 1000));
-    if (res > 999) {
-        res = 999;
+    uint16_t res = 0;
+    int16_t adc_act_val = adc_offset - get_adc_val();
+    if (adc_act_val < 0) {
+        return 0;
+    }
+    res = ((uint16_t)adc_act_val * ((float)adc_multipl / 1000));
+    if (res > tank_cap) {
+        res = tank_cap;
     }
     return res;
 }
