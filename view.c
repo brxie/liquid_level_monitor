@@ -42,7 +42,7 @@ void draw_stats(uint16_t used, uint16_t free) {
     pcd8544_fill_rect((x-1)*8, y*8, 55, 25, 0);
 
     set_curr_pos(x, y);
-    pcd8544_print("USE ");
+    pcd8544_print("USAGE ");
     _itoa(used, buff, 10);
     pcd8544_print(buff);
 

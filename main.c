@@ -15,14 +15,16 @@
 #define BUTTONS_PORT GPIOA
 #define BUTTON_MENU_PIN GPIO_PIN_1
 #define BUTTON_OK_PIN GPIO_PIN_2
-
+#define MAIN_MENU_REFRESH_FREQ 30
 
 typedef enum {MAIN_MENU, STATISTICS, SETTINGS} Menu;
 Menu menu = MAIN_MENU;
+
 uint8_t butns_cnt[7] = {0};
 uint8_t butns_press_flag = 0;
 extern uint8_t sett_cusr_pos;
 uint8_t last_menu;
+uint8_t main_menu_refresh_cnt = 0;
 
 /* Setup the system clock to run at 16MHz using the internal oscillator. */
 void CLK_Config()
@@ -202,13 +204,18 @@ INTERRUPT_HANDLER(TIM2_UPD_OVF_IRQHandler, 13)
         if (menu != last_menu) {
             pcd8544_cls_soft();
         }
-        render_main_menu(get_percent_fill(), get_space_used(), get_space_left());
+        if (main_menu_refresh_cnt == 0) {
+            render_main_menu(get_percent_fill(), get_space_used(), get_space_left());
+            main_menu_refresh_cnt = MAIN_MENU_REFRESH_FREQ;
+        }
+        main_menu_refresh_cnt--;
         break;
     case STATISTICS:
         if (menu != last_menu) {
             pcd8544_cls_soft();
         }
         render_stats();
+        main_menu_refresh_cnt = 0;
         break;
     
     case SETTINGS:
@@ -216,6 +223,7 @@ INTERRUPT_HANDLER(TIM2_UPD_OVF_IRQHandler, 13)
             pcd8544_cls();
         }
         render_settings();
+        main_menu_refresh_cnt = 0;
         break;
     }
   
