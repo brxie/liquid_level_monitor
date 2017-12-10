@@ -33,16 +33,13 @@ uint16_t get_space_left() {
         res = tank_cap;
     }
     return res;
-    
 }
 
 uint16_t get_space_used() {
     uint16_t res = 0;
-    int16_t adc_act_val = adc_offset - get_adc_val();
-    if (adc_act_val < 0) {
-        return 0;
-    }
-    res = ((uint16_t)adc_act_val * ((float)adc_multipl / 1000));
+    int16_t adc_act_val = get_adc_val() - adc_offset;
+
+    res = ((uint16_t)adc_act_val * ((float)adc_multipl / 100));
     if (res > tank_cap) {
         res = tank_cap;
     }

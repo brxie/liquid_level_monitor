@@ -12,8 +12,8 @@ void adc_init() {
     ADC1->CSR &= (~ADC1_CSR_CH);
     /* Select the ADC1 channel */
     ADC1->CSR |= (ADC1_CHANNEL_5); // PD5
-    /* The reading order should be LSB first and then MSB */
-    ADC1->CR2 |= ADC1_ALIGN_RIGHT;
+    /* The reading order should be MSB first and then LSB */
+    ADC1->CR2 |= ADC1_ALIGN_LEFT;
     /* wakes up the ADC from power down mode */
     ADC1->CR1 |= ADC1_CR1_ADON;
 }
@@ -28,7 +28,6 @@ uint16_t adc_read() {
     templ = ADC1->DRL;
     /* Then read MSB */
     temph = ADC1->DRH;
-    temph = (templ | (temph << 8));
-    
+
     return temph;
 }
